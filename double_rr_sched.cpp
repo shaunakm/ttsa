@@ -5,7 +5,7 @@
 #include <ctime>
 #include <algorithm>
 
-#define TOTAL_TEAMS 4
+#define TOTAL_TEAMS 8
 #define TOTAL_ROUNDS 2*(TOTAL_TEAMS - 1)
 
 using namespace std;
@@ -23,6 +23,7 @@ vector<vector<int> > randomSchedule()
 {
     cout<<"Total teams are "<<TOTAL_TEAMS<<" with total rounds "<<TOTAL_ROUNDS<<endl;
 
+    // This is Q from figure 3 which contains all the possible schedules
     for(int i=0; i<TOTAL_ROUNDS; i++)
     {
         for(int j=0; j<TOTAL_TEAMS; j++)
@@ -42,6 +43,7 @@ vector<vector<int> > randomSchedule()
         cout<<endl;
     }
 
+    // Creating choices which is a vector of all the home and away games
     for(int i=0; i<(2*TOTAL_TEAMS); i++)
     {
         choices[i] = choices_no;
@@ -56,9 +58,12 @@ vector<vector<int> > randomSchedule()
     }
     cout<<endl;
 
-
+    // Unique seed for the random number generator
+    // srand((unsigned)time(0));
+    // Generating the random schedule (Figure 3)
     generateRandomSchedule();
 
+    // Printing the generated schedule
     cout<<"Final Schedule"<<endl;
     for(int i=0; i<TOTAL_ROUNDS; i++)
     {
@@ -73,6 +78,7 @@ vector<vector<int> > randomSchedule()
     return schedule;
 }
 
+// Retutns the index of the element if it exists otherwise -1
 int elementExists(vector<int> weeks_sched, int element)
 {
     // cout<<"Ele exists:\t";
@@ -89,51 +95,90 @@ int elementExists(vector<int> weeks_sched, int element)
 
 bool generateRandomSchedule()
 {
-    static int team_no = 0;
+    srand(time(NULL));
+    // static int team_no = 0;
     static int week_no = 0;
     int opponent_index = -1;
-    srand((unsigned)time(0));
 
-    if(initial_schedule.empty())
-        return true;
+    // if(initial_schedule.empty())
+    //     return true;
     
-    int current_team = initial_schedule[week_no][team_no];
-    int current_opponent = initial_schedule[week_no][team_no];
-    int random_index;
-    
-    while(current_opponent == current_team)
+    while(!initial_schedule.empty())
     {
-        random_index = rand() % choices.size() - 1;
-        opponent_index = elementExists(initial_schedule[week_no], abs(choices[random_index]));
-        cout<<"Opponent is "<<opponent_index<<endl;
-        if(opponent_index != -1)
-            current_opponent = abs(choices[random_index]);
+        // cout<<initial_schedule.size()<<" : "<<initial_schedule[0].size()<<endl;
+        int current_team = initial_schedule[0][0];
+        int current_opponent = initial_schedule[0][0];
+        int random_index;
+        
+        while(current_opponent == current_team)
+        {
+            random_index = rand() % choices.size() - 1;
+            opponent_index = elementExists(initial_schedule[0], abs(choices[random_index]));
+            if(opponent_index != -1)
+                current_opponent = abs(choices[random_index]);
+            // cout<<"Current team "<<current_team<<" Current Opponent is "<<current_opponent<<endl;
+        }
+        
+        current_opponent = choices[random_index];
+        // cout<<"Week no: "<<week_no<<endl;
         // cout<<"Current team "<<current_team<<" Current Opponent is "<<current_opponent<<endl;
+
+        // schedule[week_no][team_no] = current_opponent;
+        schedule[week_no][current_team-1] = current_opponent;
+        // cout<<"wrote to schedule----------\n";
+
+        if(current_opponent > 0)
+        {
+            // schedule[week_no][opponent_index] = -1*current_team;
+            schedule[week_no][abs(current_opponent)-1] = -1*current_team;
+            // cout<<"-wrote to schedule opponent----------\n";
+        }
+        else
+        {
+            // schedule[week_no][opponent_index] = current_team;
+            schedule[week_no][abs(current_opponent)-1] = current_team;
+            // cout<<"wrote to schedule opponent----------\n";
+        }
+        
+        // cout<<"Week no: "<<week_no+1<<endl;
+        // cout<<"Current team "<<current_team<<" Current Opponent is "<<current_opponent<<endl;
+
+        if(initial_schedule[0].size() <= 2)
+        {
+            initial_schedule.erase(initial_schedule.begin()+0);
+            week_no++;
+            // team_no = 0;
+        }
+        else
+        {
+            int curr_team_in_init = elementExists(initial_schedule[0], abs(current_team));
+            int opp_team_in_init = elementExists(initial_schedule[0], abs(current_opponent));
+            // cout<<initial_schedule[0].size()<<" : ";
+            // cout<<"Starting erasing "<<abs(current_opponent)-1<<endl;
+            // initial_schedule[0].erase(initial_schedule[0].begin() + abs(current_opponent)-1);
+            initial_schedule[0].erase(initial_schedule[0].begin() + opp_team_in_init);
+            // initial_schedule[0].erase(initial_schedule[0].begin() + team_no);
+            // cout<<"Starting erasing "<<abs(current_team)-1<<endl;
+            // initial_schedule[0].erase(initial_schedule[0].begin() + current_team-1);
+            initial_schedule[0].erase(initial_schedule[0].begin() + curr_team_in_init);
+            // cout<<"completed erasing\n";
+            // team_no++;
+        }
+
+        // for(int i=0; i<TOTAL_ROUNDS; i++)
+        // {
+        //     cout<<"Week "<<i+1<<": ";
+        //     for(int j=0; j<TOTAL_TEAMS; j++)
+        //     {
+        //         cout<<schedule[i][j]<<",";
+        //     }
+        //     cout<<endl<<endl;
+        // }
     }
 
-    current_opponent = choices[random_index];
-    // cout<<"Current team "<<current_team<<" Current Opponent is "<<current_opponent<<endl;
 
-    schedule[week_no][current_team-1] = current_opponent;
-    if(current_opponent > 0)
-        schedule[week_no][opponent_index] = -1*current_team;
-    else
-        schedule[week_no][opponent_index] = current_team;
-    
-    if(initial_schedule[week_no].size() <= 2)
-    {
-        cout<<"Week no: "<<week_no<<endl;
-        initial_schedule.erase(initial_schedule.begin()+week_no);
-        week_no++;
-    }
-    else
-    {
-        initial_schedule[0].erase(initial_schedule[0].begin() + opponent_index);
-        initial_schedule[0].erase(initial_schedule[0].begin() + current_team-1);
-    }
-
-    if(generateRandomSchedule())
-        return true;
+    // if(generateRandomSchedule())
+    //     return true;
 
     return false;
 }
@@ -141,6 +186,5 @@ bool generateRandomSchedule()
 int main()
 {
     randomSchedule();
-
     return 0;
 }
