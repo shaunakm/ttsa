@@ -4,6 +4,7 @@
 #include <math.h>
 #include <ctime>
 #include <algorithm>
+#include <random>
 
 #define TOTAL_TEAMS 8
 #define TOTAL_ROUNDS 2*(TOTAL_TEAMS - 1)
@@ -15,9 +16,15 @@ vector<vector<int> > initial_schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0)
 vector<int> choices(2*TOTAL_TEAMS);
 int choices_no = 1;
 
+// Functions from paper
 vector<vector<int> > randomSchedule();
 bool generateRandomSchedule();
+void swapHomes(int home_team, int away_team);
+void swapRounds(int week_src, int week_dest);
+
+// Supporting functions
 int elementExists(vector<int> weeks_sched, int element);
+void printSchedule();
 
 vector<vector<int> > randomSchedule()
 {
@@ -64,7 +71,22 @@ vector<vector<int> > randomSchedule()
     generateRandomSchedule();
 
     // Printing the generated schedule
-    cout<<"Final Schedule"<<endl;
+    cout<<"Initial Schedule"<<endl;
+    // for(int i=0; i<TOTAL_ROUNDS; i++)
+    // {
+    //     cout<<"Week "<<i+1<<": ";
+    //     for(int j=0; j<TOTAL_TEAMS; j++)
+    //     {
+    //         cout<<schedule[i][j]<<",";
+    //     }
+    //     cout<<endl;
+    // }
+
+    return schedule;
+}
+
+void printSchedule()
+{
     for(int i=0; i<TOTAL_ROUNDS; i++)
     {
         cout<<"Week "<<i+1<<": ";
@@ -74,11 +96,9 @@ vector<vector<int> > randomSchedule()
         }
         cout<<endl;
     }
-
-    return schedule;
 }
 
-// Retutns the index of the element if it exists otherwise -1
+// Returns the index of the element if it exists otherwise -1
 int elementExists(vector<int> weeks_sched, int element)
 {
     // cout<<"Ele exists:\t";
@@ -102,7 +122,9 @@ bool generateRandomSchedule()
 
     // if(initial_schedule.empty())
     //     return true;
-    
+    random_device random_dev;
+    mt19937 generate(random_dev());
+
     while(!initial_schedule.empty())
     {
         // cout<<initial_schedule.size()<<" : "<<initial_schedule[0].size()<<endl;
@@ -113,6 +135,7 @@ bool generateRandomSchedule()
         while(current_opponent == current_team)
         {
             random_index = rand() % choices.size() - 1;
+
             opponent_index = elementExists(initial_schedule[0], abs(choices[random_index]));
             if(opponent_index != -1)
                 current_opponent = abs(choices[random_index]);
@@ -183,8 +206,41 @@ bool generateRandomSchedule()
     return false;
 }
 
+void swapHomes(int home_team, int away_team)
+{
+    for(int i=0; i<TOTAL_ROUNDS; i++)
+    {
+        if(abs(schedule[i][home_team-1]) == away_team)
+        {
+            schedule[i][home_team-1] *= -1;
+            schedule[i][away_team-1] *= -1;
+        }
+    }
+}
+
+void swapRounds(int src_week, int dest_week)
+{
+    if((src_week > TOTAL_ROUNDS) || (dest_week > TOTAL_ROUNDS))
+        exit(0);
+    else
+        schedule[src_week-1].swap(schedule[dest_week-1]);
+}
+
 int main()
 {
+    // Generate the initial schedule
     randomSchedule();
+    printSchedule();
+
+    // Swap Homes
+    swapHomes(1, 3);
+    cout<<"\nAfter Home swapping:\n";
+    printSchedule();
+
+    // Swap Rounds
+    swapRounds(2, 3);
+    cout<<"\nAfter Round swapping:\n";
+    printSchedule();
+
     return 0;
 }
