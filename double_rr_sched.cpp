@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <random>
 
-#define TOTAL_TEAMS 8
+#define TOTAL_TEAMS 4
 #define TOTAL_ROUNDS 2*(TOTAL_TEAMS - 1)
 
 using namespace std;
@@ -24,6 +24,7 @@ bool generateRandomSchedule();
 void swapHomes(int home_team, int away_team);
 void swapRounds(int week_src, int week_dest);
 void swapTeamSchedule(int team_1, int team_2);
+void partialSwapRounds(int team, int round_1, int round_2);
 
 // Supporting functions
 int elementExists(vector<int> weeks_sched, int element);
@@ -255,6 +256,21 @@ void swapTeamSchedule(int team_1, int team_2)
     }
 }
 
+void partialSwapRounds(int team, int round_1, int round_2)
+{
+    int r1_index = round_1 - 1;
+    int r2_index = round_2 - 1;
+    for(int i=0; i<TOTAL_TEAMS; i++)
+    {
+        if(abs(schedule[r1_index][i]) != abs(schedule[r2_index][i]))
+        {
+            int temp_team = schedule[r1_index][i];
+            schedule[r1_index][i] = schedule[r2_index][i];
+            schedule[r2_index][i] = temp_team;
+        }
+    }
+}
+
 int main()
 {
     // Generate the initial schedule
@@ -272,8 +288,13 @@ int main()
     // printSchedule();
 
     // Swap Team Schedule
-    swapTeamSchedule(1, 4);
-    cout<<"\nAfter Team Schedule Swapping:\n";
+    // swapTeamSchedule(1, 4);
+    // cout<<"\nAfter Team Schedule Swapping:\n";
+    // printSchedule();
+
+    // Partial Swap
+    partialSwapRounds(2, 1, 4);
+    cout<<"\nAfter Partial Swap Rounds:\n";
     printSchedule();
 
     return 0;
