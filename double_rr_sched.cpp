@@ -16,11 +16,14 @@ vector<vector<int> > initial_schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0)
 vector<int> choices(2*TOTAL_TEAMS);
 int choices_no = 1;
 
-// Functions from paper
+// Functions to generate initial schedule
 vector<vector<int> > randomSchedule();
 bool generateRandomSchedule();
+
+// Neighborhood functions
 void swapHomes(int home_team, int away_team);
 void swapRounds(int week_src, int week_dest);
+void swapTeamSchedule(int team_1, int team_2);
 
 // Supporting functions
 int elementExists(vector<int> weeks_sched, int element);
@@ -226,20 +229,51 @@ void swapRounds(int src_week, int dest_week)
         schedule[src_week-1].swap(schedule[dest_week-1]);
 }
 
+void swapTeamSchedule(int team_1, int team_2)
+{
+    int team_1_index = team_1 - 1;
+    int team_2_index = team_2 - 1;
+    for(int i=0; i<TOTAL_ROUNDS; i++)
+    {
+        if(abs(schedule[i][team_1_index]) != team_2)
+        {
+            int team_1_opponent = schedule[i][team_1_index];
+            int team_2_opponent = schedule[i][team_2_index];
+
+            schedule[i][team_1_index] = team_2_opponent;
+            if(team_2_opponent > 0)
+                schedule[i][abs(team_2_opponent)-1] = (-1)* team_1;
+            else
+                schedule[i][abs(team_2_opponent)-1] = team_1;
+            
+            schedule[i][team_2_index] = team_1_opponent;
+            if(team_1_opponent > 0)
+                schedule[i][abs(team_1_opponent)-1] = (-1)* team_2;
+            else
+                schedule[i][abs(team_1_opponent)-1] = team_2;
+        }
+    }
+}
+
 int main()
 {
     // Generate the initial schedule
     randomSchedule();
     printSchedule();
 
-    // Swap Homes
-    swapHomes(1, 3);
-    cout<<"\nAfter Home swapping:\n";
-    printSchedule();
+    // // Swap Homes
+    // swapHomes(1, 3);
+    // cout<<"\nAfter Home swapping:\n";
+    // printSchedule();
 
-    // Swap Rounds
-    swapRounds(2, 3);
-    cout<<"\nAfter Round swapping:\n";
+    // // Swap Rounds
+    // swapRounds(2, 3);
+    // cout<<"\nAfter Round swapping:\n";
+    // printSchedule();
+
+    // Swap Team Schedule
+    swapTeamSchedule(1, 4);
+    cout<<"\nAfter Team Schedule Swapping:\n";
     printSchedule();
 
     return 0;
