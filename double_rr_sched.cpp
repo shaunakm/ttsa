@@ -25,6 +25,7 @@ void swapHomes(int home_team, int away_team);
 void swapRounds(int week_src, int week_dest);
 void swapTeamSchedule(int team_1, int team_2);
 void partialSwapRounds(int team, int round_1, int round_2);
+void partialSwapTeams(int team_1, int team_2, int round);
 
 // Supporting functions
 int elementExists(vector<int> weeks_sched, int element);
@@ -271,9 +272,64 @@ void partialSwapRounds(int team, int round_1, int round_2)
     }
 }
 
+// int duplicateRowIndex(vector<int> swapped_rounds, int team)
+int duplicateRowIndex(int current_team, int opponent_team, int current_round)
+{
+    int duplicate_index = 0;
+
+    for(int i=0; i<TOTAL_ROUNDS; i++)
+    {
+        if(i != current_round)
+        {
+            if(schedule[i][abs(current_team)-1] == opponent_team)
+            {
+                cout<<"Inside the if: "<<i<<endl;
+                return i;
+            }    
+        }
+    }
+
+    return -1;
+}
+
+void partialSwapTeams(int team_1, int team_2, int round)
+{
+    int t1_index = team_1 - 1;
+    int t2_index = team_2 - 1;
+    int round_index = round - 1;
+    vector<int> swapped_rounds;
+    swapped_rounds.push_back(round);
+
+    // Must also check whether team_1 and team_2 are playing against each other on that round
+
+    while(round_index >= 0)
+    {
+            int team_1_opponent = schedule[round_index][t1_index];
+            int team_2_opponent = schedule[round_index][t2_index];
+
+            schedule[round_index][t1_index] = team_2_opponent;
+            if(team_2_opponent > 0)
+                schedule[round_index][abs(team_2_opponent)-1] = (-1)* team_1;
+            else
+                schedule[round_index][abs(team_2_opponent)-1] = team_1;
+            
+            schedule[round_index][t2_index] = team_1_opponent;
+            if(team_1_opponent > 0)
+                schedule[round_index][abs(team_1_opponent)-1] = (-1)* team_2;
+            else
+                schedule[round_index][abs(team_1_opponent)-1] = team_2;
+
+            // round_index = duplicateRowIndex(swapped_rounds, team_2_opponent); // Now it becomes opponent of team 1
+            round_index = duplicateRowIndex(team_1, team_2_opponent, round_index);
+            cout<<team_1<<" : "<<team_2_opponent<< " : "<<round_index<<endl;
+    }
+}
+
 int main()
 {
     // Generate the initial schedule
+    int t1, t2, week;
+
     randomSchedule();
     printSchedule();
 
@@ -293,8 +349,15 @@ int main()
     // printSchedule();
 
     // Partial Swap
-    partialSwapRounds(2, 1, 4);
-    cout<<"\nAfter Partial Swap Rounds:\n";
+    // partialSwapRounds(2, 1, 4);
+    // cout<<"\nAfter Partial Swap Rounds:\n";
+    // printSchedule();
+
+    // Partial Swap Teams 
+    cout<<"\nEnter team 1, team 2 and round: ";
+    cin>>t1>>t2>>week;
+    cout<<"Partial Swap Team Schedule:\n";
+    partialSwapTeams(t1, t2, week);
     printSchedule();
 
     return 0;
