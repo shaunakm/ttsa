@@ -20,6 +20,14 @@ vector<vector<int> > distance_matrix(TOTAL_TEAMS, vector<int>(TOTAL_TEAMS, 0));
 vector<int> choices(2*TOTAL_TEAMS);
 int choices_no = 1;
 
+// Parameters
+float weight = 4000;
+float theta = 1.04;
+float delta = 1.04;
+float beta = 0.99;
+float temperature = 400;
+float best_temperature = 400;
+
 // Functions to generate initial schedule
 vector<vector<int> > randomSchedule();
 bool generateRandomSchedule();
@@ -45,6 +53,7 @@ void partialSwapTeams(int team_1, int team_2, int round);
 
 // Supporting functions
 int elementExists(vector<int> weeks_sched, int element);
+int opponenetExists(int current_team, int opponent);
 void printSchedule();
 int duplicateRowIndex(int current_team, int opponent_team, int current_round);
 int numberOfViolations(bool updated_schedule);
@@ -360,7 +369,7 @@ int cost(bool updated_schedule)
     vector<vector<int> > curr_schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
 
     if(updated_schedule)
-        curr_schedule = schedule;
+        curr_schedule = schedule;   // for loop deep copy
     else
         curr_schedule = prev_schedule;    
 
@@ -381,7 +390,7 @@ int cost(bool updated_schedule)
                 {
                     total_cost += distance_matrix[tm_index][abs(curr_schedule[rnd_index][tm_index])];
                 }
-                
+                // Add a case where prev is away and current home
             }
         }
     }
@@ -455,8 +464,6 @@ float f(int total_violations)
 
 float objectiveFunction(bool updated_schedule)
 {
-    int weight = 1;
-
     return sqrt(pow(cost(updated_schedule), 2) + pow((weight*f(numberOfViolations(updated_schedule))), 2));
 }
 
@@ -469,7 +476,7 @@ void selectRandomMove()
     int round_2 = -1;
 
     srand(time(NULL));
-    prev_schedule = schedule;
+    prev_schedule = schedule; // deep copy for loop
 
     team_1 = (rand() % TOTAL_TEAMS) + 1;
 
@@ -525,9 +532,9 @@ void ttsa()
     int number_of_infeasible = INT32_MAX;
     int reheat = 0;
     int counter = 0;
-    int max_r = 10;
-    int max_c = 5000;
-    int max_p = 7100;
+    int max_r = 2;
+    int max_c = 50;
+    int max_p = 70;
 
     while(reheat <= max_r)
     {
@@ -547,6 +554,16 @@ void ttsa()
                 {
                     accept = true;
                 }
+                else
+                {
+                    float diff_in_cost = objectiveFunction(updated_schedule) - objectiveFunction(!(updated_schedule));
+                    float prob = exp(-1*diff_in_cost/temperature);
+                    if(prob > 0.5)
+                        accept = true;
+                    else
+                        accept = false;
+                }
+                
 
                 if(accept)
                 {
@@ -565,10 +582,17 @@ void ttsa()
                         reheat = 0;
                         counter = 0;
                         phase = 0;
-                        // Temperature
+                        best_temperature = temperature;
                         best_feasible = number_of_feasible;
                         best_infeasible = number_of_infeasible;
-                        // if to update the parameters
+                        if(numberOfViolations(updated_schedule) == 0)
+                        {
+                            weight /= theta;
+                        }
+                        else
+                        {
+                            weight /= delta;
+                        }
                     }
                 }
                 else
@@ -577,10 +601,10 @@ void ttsa()
                 }
             }
             phase++;
-            // Temp update
+            temperature *= beta;
         }
         reheat++;
-        // Temp update
+        temperature *= 2;
     }
 }
 
@@ -628,7 +652,7 @@ int main()
     // int distance = cost(true);
     // cout<<"Cost of the schedule is "<<distance;
 
-    ttsa();
+    // ttsa();
 
     return 0;
 }
