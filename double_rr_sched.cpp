@@ -5,6 +5,7 @@
 #include <ctime>
 #include <algorithm>
 #include <random>
+#include <math.h>
 
 #define TOTAL_TEAMS 4
 #define TOTAL_ROUNDS 2*(TOTAL_TEAMS - 1)
@@ -14,6 +15,7 @@ using namespace std;
 
 vector<vector<int> > schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
 vector<vector<int> > initial_schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
+vector<vector<int> > distance_matrix(TOTAL_TEAMS, vector<int>(TOTAL_TEAMS, 0));
 vector<int> choices(2*TOTAL_TEAMS);
 int choices_no = 1;
 
@@ -25,10 +27,13 @@ bool generateRandomSchedule();
 void getOptimizedSchedule();
 
 // Cost functions
-void cost();
+int cost();
 
 // Objective function
-void objective();
+float objectiveFunction();
+
+// TTSA Algorithm
+void ttsa();
 
 // Neighborhood functions
 void swapHomes(int home_team, int away_team);
@@ -42,6 +47,7 @@ int elementExists(vector<int> weeks_sched, int element);
 void printSchedule();
 int duplicateRowIndex(int current_team, int opponent_team, int current_round);
 int numberOfViolations();
+void generateDistanceMatrix();
 
 vector<vector<int> > randomSchedule()
 {
@@ -358,14 +364,43 @@ void selectRandomMove()
     }
 }
 
-void cost()
+void generateDistanceMatrix()
 {
-
+    // for 4x4
+    distance_matrix = { {0,745,665,929},
+                        {745,0,80,337},
+                        {665,80,0,380},
+                        {929,337,380,0}
+                      };
 }
 
-void getOptimizedSchedule()
+int cost()
 {
+    int total_cost = 0;
 
+    for(int tm_index = 0; tm_index<TOTAL_TEAMS; tm_index++)
+    {
+        if(schedule[0][tm_index] < 0)
+            total_cost += distance_matrix[tm_index][abs(schedule[0][tm_index])];
+        
+        for(int rnd_index = 1; rnd_index<TOTAL_ROUNDS; rnd_index++)
+        {
+            if(schedule[rnd_index][tm_index] < 0)
+            {
+                if(schedule[rnd_index-1][tm_index] < 0)
+                {
+                    total_cost += distance_matrix[abs(schedule[rnd_index-1][tm_index])][abs(schedule[rnd_index][tm_index])];
+                }
+                else
+                {
+                    total_cost += distance_matrix[tm_index][abs(schedule[rnd_index][tm_index])];
+                }
+                
+            }
+        }
+    }
+
+    return total_cost;
 }
 
 int numberOfViolations()
@@ -419,6 +454,29 @@ int numberOfViolations()
     return total_violations;
 }
 
+void ttsa()
+{
+    int best_feasible = INT32_MAX;
+    int number_of_feasible = INT32_MAX;
+    int best_infeasible = INT32_MAX;
+    int number_of_infeasible = INT32_MAX;
+    int reheat = 0;
+    int counter = 0;
+}
+
+// Sublinear function 
+float f(int total_violations)
+{
+    return 1 + sqrt(total_violations)*log(total_violations/2);
+}
+
+float objectiveFunction()
+{
+    int weight = 1;
+
+    return sqrt(pow(cost(), 2) + pow((weight*f(numberOfViolations())), 2));
+}
+
 int main()
 {
     // Generate the initial schedule
@@ -457,6 +515,11 @@ int main()
     // Total Violations
     int violations = numberOfViolations();
     cout<<"Total violations are: "<<violations<<endl;
+
+    // Cost function
+    generateDistanceMatrix();
+    int distance = cost();
+    cout<<"Cost of the schedule is "<<distance;
 
     return 0;
 }
