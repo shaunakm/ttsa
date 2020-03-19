@@ -14,6 +14,7 @@ using namespace std;
 
 
 vector<vector<int> > schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
+vector<vector<int> > prev_schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
 vector<vector<int> > initial_schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
 vector<vector<int> > distance_matrix(TOTAL_TEAMS, vector<int>(TOTAL_TEAMS, 0));
 vector<int> choices(2*TOTAL_TEAMS);
@@ -27,7 +28,7 @@ bool generateRandomSchedule();
 void getOptimizedSchedule();
 
 // Cost functions
-int cost();
+int cost(bool updated_schedule);
 
 // Objective function
 float objectiveFunction();
@@ -46,7 +47,7 @@ void partialSwapTeams(int team_1, int team_2, int round);
 int elementExists(vector<int> weeks_sched, int element);
 void printSchedule();
 int duplicateRowIndex(int current_team, int opponent_team, int current_round);
-int numberOfViolations();
+int numberOfViolations(bool updated_schedule);
 void generateDistanceMatrix();
 
 vector<vector<int> > randomSchedule()
@@ -343,27 +344,6 @@ void partialSwapTeams(int team_1, int team_2, int round)
     }
 }
 
-void selectRandomMove()
-{
-    int move = -1;
-    switch (move)
-    {
-    case 1:
-        // Swap Homes
-        break;
-    
-    case 2:
-        // Swap rounds
-        break;
-    case 3:
-        // Swap Team Schedule
-        break;
-    default:
-        cout<<"Invalid choice"<<endl;
-        break;
-    }
-}
-
 void generateDistanceMatrix()
 {
     // for 4x4
@@ -374,26 +354,32 @@ void generateDistanceMatrix()
                       };
 }
 
-int cost()
+int cost(bool updated_schedule)
 {
     int total_cost = 0;
+    vector<vector<int> > curr_schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
+
+    if(updated_schedule)
+        curr_schedule = schedule;
+    else
+        curr_schedule = prev_schedule;    
 
     for(int tm_index = 0; tm_index<TOTAL_TEAMS; tm_index++)
     {
-        if(schedule[0][tm_index] < 0)
-            total_cost += distance_matrix[tm_index][abs(schedule[0][tm_index])];
+        if(curr_schedule[0][tm_index] < 0)
+            total_cost += distance_matrix[tm_index][abs(curr_schedule[0][tm_index])];
         
         for(int rnd_index = 1; rnd_index<TOTAL_ROUNDS; rnd_index++)
         {
-            if(schedule[rnd_index][tm_index] < 0)
+            if(curr_schedule[rnd_index][tm_index] < 0)
             {
-                if(schedule[rnd_index-1][tm_index] < 0)
+                if(curr_schedule[rnd_index-1][tm_index] < 0)
                 {
-                    total_cost += distance_matrix[abs(schedule[rnd_index-1][tm_index])][abs(schedule[rnd_index][tm_index])];
+                    total_cost += distance_matrix[abs(curr_schedule[rnd_index-1][tm_index])][abs(curr_schedule[rnd_index][tm_index])];
                 }
                 else
                 {
-                    total_cost += distance_matrix[tm_index][abs(schedule[rnd_index][tm_index])];
+                    total_cost += distance_matrix[tm_index][abs(curr_schedule[rnd_index][tm_index])];
                 }
                 
             }
@@ -403,11 +389,18 @@ int cost()
     return total_cost;
 }
 
-int numberOfViolations()
+int numberOfViolations(bool updated_schedule)
 {
     int total_violations = 0;
     int nr_violations = 0;
     int atmost_violations = 0;
+
+    vector<vector<int> > curr_schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
+
+    if(updated_schedule)
+        curr_schedule = schedule;
+    else
+        curr_schedule = prev_schedule;
 
     for(int tm_index=0; tm_index<TOTAL_TEAMS; tm_index++)
     {
@@ -415,13 +408,13 @@ int numberOfViolations()
         int away_games = 0;
         for(int rnd_index=0; rnd_index<TOTAL_ROUNDS-3; rnd_index++)
         {
-            if((schedule[rnd_index][tm_index] > 0) && (schedule[rnd_index+1][tm_index] > 0) && (schedule[rnd_index+2][tm_index] > 0) && (schedule[rnd_index+3][tm_index] > 0))
+            if((curr_schedule[rnd_index][tm_index] > 0) && (curr_schedule[rnd_index+1][tm_index] > 0) && (curr_schedule[rnd_index+2][tm_index] > 0) && (curr_schedule[rnd_index+3][tm_index] > 0))
             {
                 home_games += 4;
                 away_games = 0;
             }
 
-            if((schedule[rnd_index][tm_index] < 0) && (schedule[rnd_index+1][tm_index] < 0) && (schedule[rnd_index+2][tm_index] < 0) && (schedule[rnd_index+3][tm_index] < 0))
+            if((curr_schedule[rnd_index][tm_index] < 0) && (curr_schedule[rnd_index+1][tm_index] < 0) && (curr_schedule[rnd_index+2][tm_index] < 0) && (curr_schedule[rnd_index+3][tm_index] < 0))
             {
                 away_games += 4;
                 home_games = 0;
@@ -441,7 +434,7 @@ int numberOfViolations()
     {
         for(int rnd_index=0; rnd_index<TOTAL_ROUNDS-1; rnd_index++)
         {
-            if(abs(schedule[rnd_index][tm_index]) == abs(schedule[rnd_index+1][tm_index]))
+            if(abs(curr_schedule[rnd_index][tm_index]) == abs(curr_schedule[rnd_index+1][tm_index]))
             {
                 nr_violations++;
             }
@@ -454,6 +447,76 @@ int numberOfViolations()
     return total_violations;
 }
 
+// Sublinear function 
+float f(int total_violations)
+{
+    return 1 + sqrt(total_violations)*log(total_violations/2);
+}
+
+float objectiveFunction(bool updated_schedule)
+{
+    int weight = 1;
+
+    return sqrt(pow(cost(updated_schedule), 2) + pow((weight*f(numberOfViolations(updated_schedule))), 2));
+}
+
+void selectRandomMove()
+{
+    int move = -1;
+    int team_1 = -1;
+    int team_2 = -1;
+    int round_1 = -1;
+    int round_2 = -1;
+
+    srand(time(NULL));
+    prev_schedule = schedule;
+
+    team_1 = (rand() % TOTAL_TEAMS) + 1;
+
+    while(true)
+    {
+        team_2 = (rand() % TOTAL_TEAMS) + 1;
+        if(team_1 != team_2)
+            break;
+    }
+
+    round_1 = (rand() % TOTAL_ROUNDS) + 1;
+
+    while(true)
+    {
+        round_2 = (rand() % TOTAL_ROUNDS) + 1;
+        if(round_1 != round_2)
+            break;
+    }
+
+    move = (rand() % 4) + 1;
+
+    switch (move)
+    {
+    case 1:
+        // Swap Homes
+        swapHomes(team_1, team_2);
+        break;
+    
+    case 2:
+        // Swap rounds
+        swapRounds(round_1, round_2);
+        break;
+    case 3:
+        // Swap Team Schedule
+        swapTeamSchedule(team_1, team_2);
+        break;
+    case 4:
+        partialSwapRounds(team_1, round_1, round_2);
+        break;
+    case 5:
+        partialSwapTeams(team_1, team_2, round_1);
+        break;
+    default:
+        break;
+    }
+}
+
 void ttsa()
 {
     int best_feasible = INT32_MAX;
@@ -462,19 +525,24 @@ void ttsa()
     int number_of_infeasible = INT32_MAX;
     int reheat = 0;
     int counter = 0;
-}
+    int max_r = 10;
+    int max_c = 5000;
+    int max_p = 7100;
 
-// Sublinear function 
-float f(int total_violations)
-{
-    return 1 + sqrt(total_violations)*log(total_violations/2);
-}
-
-float objectiveFunction()
-{
-    int weight = 1;
-
-    return sqrt(pow(cost(), 2) + pow((weight*f(numberOfViolations())), 2));
+    while(reheat <= max_r)
+    {
+        int phase = 0;
+        while(phase <= max_p)
+        {
+            counter = 0;
+            while(counter <= max_c)
+            {
+                counter++;
+            }
+            phase++;
+        }
+        reheat++;
+    }
 }
 
 int main()
@@ -513,12 +581,12 @@ int main()
     // printSchedule();
 
     // Total Violations
-    int violations = numberOfViolations();
+    int violations = numberOfViolations(true);
     cout<<"Total violations are: "<<violations<<endl;
 
     // Cost function
     generateDistanceMatrix();
-    int distance = cost();
+    int distance = cost(true);
     cout<<"Cost of the schedule is "<<distance;
 
     return 0;
