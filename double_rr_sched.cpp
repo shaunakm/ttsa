@@ -11,6 +11,7 @@
 
 using namespace std;
 
+
 vector<vector<int> > schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
 vector<vector<int> > initial_schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
 vector<int> choices(2*TOTAL_TEAMS);
@@ -19,6 +20,15 @@ int choices_no = 1;
 // Functions to generate initial schedule
 vector<vector<int> > randomSchedule();
 bool generateRandomSchedule();
+
+// Optimization function
+void getOptimizedSchedule();
+
+// Cost functions
+void cost();
+
+// Objective function
+void objective();
 
 // Neighborhood functions
 void swapHomes(int home_team, int away_team);
@@ -30,6 +40,8 @@ void partialSwapTeams(int team_1, int team_2, int round);
 // Supporting functions
 int elementExists(vector<int> weeks_sched, int element);
 void printSchedule();
+int duplicateRowIndex(int current_team, int opponent_team, int current_round);
+int numberOfViolations();
 
 vector<vector<int> > randomSchedule()
 {
@@ -272,7 +284,7 @@ void partialSwapRounds(int team, int round_1, int round_2)
     }
 }
 
-// int duplicateRowIndex(vector<int> swapped_rounds, int team)
+
 int duplicateRowIndex(int current_team, int opponent_team, int current_round)
 {
     int duplicate_index = 0;
@@ -325,6 +337,88 @@ void partialSwapTeams(int team_1, int team_2, int round)
     }
 }
 
+void selectRandomMove()
+{
+    int move = -1;
+    switch (move)
+    {
+    case 1:
+        // Swap Homes
+        break;
+    
+    case 2:
+        // Swap rounds
+        break;
+    case 3:
+        // Swap Team Schedule
+        break;
+    default:
+        cout<<"Invalid choice"<<endl;
+        break;
+    }
+}
+
+void cost()
+{
+
+}
+
+void getOptimizedSchedule()
+{
+
+}
+
+int numberOfViolations()
+{
+    int total_violations = 0;
+    int nr_violations = 0;
+    int atmost_violations = 0;
+
+    for(int tm_index=0; tm_index<TOTAL_TEAMS; tm_index++)
+    {
+        int home_games = 0;
+        int away_games = 0;
+        for(int rnd_index=0; rnd_index<TOTAL_ROUNDS-3; rnd_index++)
+        {
+            if((schedule[rnd_index][tm_index] > 0) && (schedule[rnd_index+1][tm_index] > 0) && (schedule[rnd_index+2][tm_index] > 0) && (schedule[rnd_index+3][tm_index] > 0))
+            {
+                home_games += 4;
+                away_games = 0;
+            }
+
+            if((schedule[rnd_index][tm_index] < 0) && (schedule[rnd_index+1][tm_index] < 0) && (schedule[rnd_index+2][tm_index] < 0) && (schedule[rnd_index+3][tm_index] < 0))
+            {
+                away_games += 4;
+                home_games = 0;
+            }
+
+            if((home_games > 3) || (away_games > 3))
+            {
+                // cout<<"--inside atmost----\n";
+                atmost_violations++;
+                home_games = 0;
+                away_games = 0;
+            }
+        }
+    }
+
+    for(int tm_index=0; tm_index<TOTAL_TEAMS; tm_index++)
+    {
+        for(int rnd_index=0; rnd_index<TOTAL_ROUNDS-1; rnd_index++)
+        {
+            if(abs(schedule[rnd_index][tm_index]) == abs(schedule[rnd_index+1][tm_index]))
+            {
+                nr_violations++;
+            }
+        }
+    }
+
+    cout<<"Atmost violations are "<<atmost_violations<<" Non repeat violations are "<<nr_violations<<endl;
+    total_violations = nr_violations + atmost_violations;
+
+    return total_violations;
+}
+
 int main()
 {
     // Generate the initial schedule
@@ -354,11 +448,15 @@ int main()
     // printSchedule();
 
     // Partial Swap Teams 
-    cout<<"\nEnter team 1, team 2 and round: ";
-    cin>>t1>>t2>>week;
-    cout<<"Partial Swap Team Schedule:\n";
-    partialSwapTeams(t1, t2, week);
-    printSchedule();
+    // cout<<"\nEnter team 1, team 2 and round: ";
+    // cin>>t1>>t2>>week;
+    // cout<<"Partial Swap Team Schedule:\n";
+    // partialSwapTeams(t1, t2, week);
+    // printSchedule();
+
+    // Total Violations
+    int violations = numberOfViolations();
+    cout<<"Total violations are: "<<violations<<endl;
 
     return 0;
 }
