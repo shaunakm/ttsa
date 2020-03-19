@@ -7,7 +7,7 @@
 #include <random>
 #include <math.h>
 
-#define TOTAL_TEAMS 4
+#define TOTAL_TEAMS 2
 #define TOTAL_ROUNDS 2*(TOTAL_TEAMS - 1)
 
 using namespace std;
@@ -186,6 +186,9 @@ bool generateRandomSchedule()
             if(opponent_index != -1)
                 current_opponent = abs(choices[random_index]);
             // cout<<"Current team "<<current_team<<" Current Opponent is "<<current_opponent<<endl;
+
+            if(opponenetExists(current_team, current_opponent) == -1)
+                current_opponent = current_team;
         }
         
         current_opponent = choices[random_index];
@@ -382,9 +385,21 @@ int cost(bool updated_schedule)
     vector<vector<int> > curr_schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
 
     if(updated_schedule)
+    {
         curr_schedule = schedule;   // for loop deep copy
+
+        for(int i=0; i<TOTAL_ROUNDS; i++)
+            for(int j=0; j<TOTAL_TEAMS; j++)
+                curr_schedule[i][j] = schedule[i][j];
+    }
     else
+    {
         curr_schedule = prev_schedule;    
+
+        for(int i=0; i<TOTAL_ROUNDS; i++)
+            for(int j=0; j<TOTAL_TEAMS; j++)
+                curr_schedule[i][j] = prev_schedule[i][j];
+    }
 
     for(int tm_index = 0; tm_index<TOTAL_TEAMS; tm_index++)
     {
@@ -420,9 +435,21 @@ int numberOfViolations(bool updated_schedule)
     vector<vector<int> > curr_schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
 
     if(updated_schedule)
-        curr_schedule = schedule;
+    {
+        curr_schedule = schedule;   // for loop deep copy
+
+        for(int i=0; i<TOTAL_ROUNDS; i++)
+            for(int j=0; j<TOTAL_TEAMS; j++)
+                curr_schedule[i][j] = schedule[i][j];
+    }
     else
-        curr_schedule = prev_schedule;
+    {
+        curr_schedule = prev_schedule;    
+
+        for(int i=0; i<TOTAL_ROUNDS; i++)
+            for(int j=0; j<TOTAL_TEAMS; j++)
+                curr_schedule[i][j] = prev_schedule[i][j];
+    }
 
     for(int tm_index=0; tm_index<TOTAL_TEAMS; tm_index++)
     {
@@ -489,7 +516,11 @@ void selectRandomMove()
     int round_2 = -1;
 
     srand(time(NULL));
-    prev_schedule = schedule; // deep copy for loop
+    // prev_schedule = schedule; // deep copy for loop
+    for(int i=0;i<TOTAL_ROUNDS; i++)
+        for(int j=0; j<TOTAL_TEAMS; j++)
+            prev_schedule[i][j] = schedule[i][j];
+
 
     team_1 = (rand() % TOTAL_TEAMS) + 1;
 
@@ -660,10 +691,10 @@ int main()
     // int violations = numberOfViolations(true);
     // cout<<"Total violations are: "<<violations<<endl;
 
-    // // Cost function
-    // generateDistanceMatrix();
-    // int distance = cost(true);
-    // cout<<"Cost of the schedule is "<<distance;
+    // Cost function
+    generateDistanceMatrix();
+    int distance = cost(true);
+    cout<<"Cost of the schedule is "<<distance;
 
     // ttsa();
 
