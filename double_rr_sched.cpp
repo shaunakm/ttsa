@@ -537,11 +537,50 @@ void ttsa()
             counter = 0;
             while(counter <= max_c)
             {
-                counter++;
+                bool updated_schedule = true;
+                bool accept = false;
+                selectRandomMove();
+
+                if(objectiveFunction(updated_schedule) < objectiveFunction(!(updated_schedule)) || 
+                    ((numberOfViolations(updated_schedule) == 0) && (objectiveFunction(updated_schedule) < best_feasible)) ||
+                     ((numberOfViolations(updated_schedule) > 0) && (objectiveFunction(updated_schedule) < best_infeasible)))
+                {
+                    accept = true;
+                }
+
+                if(accept)
+                {
+                    prev_schedule = schedule;
+                    if(numberOfViolations(updated_schedule) == 0)
+                    {
+                        number_of_feasible = min((int)objectiveFunction(updated_schedule), best_feasible);
+                    }
+                    else
+                    {
+                        number_of_infeasible = min((int)objectiveFunction(updated_schedule), best_feasible);
+                    }
+
+                    if((number_of_feasible < best_feasible) || (number_of_infeasible < best_infeasible))
+                    {
+                        reheat = 0;
+                        counter = 0;
+                        phase = 0;
+                        // Temperature
+                        best_feasible = number_of_feasible;
+                        best_infeasible = number_of_infeasible;
+                        // if to update the parameters
+                    }
+                }
+                else
+                {
+                    counter++;
+                }
             }
             phase++;
+            // Temp update
         }
         reheat++;
+        // Temp update
     }
 }
 
@@ -581,13 +620,15 @@ int main()
     // printSchedule();
 
     // Total Violations
-    int violations = numberOfViolations(true);
-    cout<<"Total violations are: "<<violations<<endl;
+    // int violations = numberOfViolations(true);
+    // cout<<"Total violations are: "<<violations<<endl;
 
-    // Cost function
-    generateDistanceMatrix();
-    int distance = cost(true);
-    cout<<"Cost of the schedule is "<<distance;
+    // // Cost function
+    // generateDistanceMatrix();
+    // int distance = cost(true);
+    // cout<<"Cost of the schedule is "<<distance;
+
+    ttsa();
 
     return 0;
 }
