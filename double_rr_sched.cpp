@@ -146,6 +146,19 @@ int elementExists(vector<int> weeks_sched, int element)
     return -1;
 }
 
+int opponenetExists(int current_team, int opponent)
+{
+    for(int i=0; i<TOTAL_ROUNDS;i++)
+    {
+        if(schedule[i][current_team-1] == current_team)
+        {
+            return -1;
+        }
+    }
+
+    return 1;
+}
+
 bool generateRandomSchedule()
 {
     srand(time(NULL));
