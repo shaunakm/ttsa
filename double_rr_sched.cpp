@@ -7,11 +7,10 @@
 #include <random>
 #include <math.h>
 
-#define TOTAL_TEAMS 2
+#define TOTAL_TEAMS 6
 #define TOTAL_ROUNDS 2*(TOTAL_TEAMS - 1)
 
 using namespace std;
-
 
 vector<vector<int> > schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
 vector<vector<int> > prev_schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
@@ -27,6 +26,10 @@ float delta = 1.04;
 float beta = 0.99;
 float temperature = 400;
 float best_temperature = 400;
+int best_feasible = INT32_MAX;
+int number_of_feasible = INT32_MAX;
+int best_infeasible = INT32_MAX;
+int number_of_infeasible = INT32_MAX;
 
 // Functions to generate initial schedule
 vector<vector<int> > randomSchedule();
@@ -157,6 +160,21 @@ int opponenetExists(int current_team, int opponent)
     }
 
     return 1;
+}
+
+void getPaperSchedule()
+{
+    schedule = {{6, 5, -4, 3, -2, -1},
+                {-2, 1, 5, 6, -3, -4},
+                {4, -3, 2, -1, 6, -5},
+                {3, -6, -1, -5, 4, 2},
+                {-5, 4, 6, -2, 1, -6},
+                {-4, 3, -2, 1, -6, 5},
+                {-3, 6, 1, 5, -4, -2},
+                {5, -4, -6, 2, -1, 3},
+                {2, -1, -5, -6, 3, 4},
+                {-6, -5, 4, -3, 2, 1}
+                };
 }
 
 bool generateRandomSchedule()
@@ -372,10 +390,18 @@ void partialSwapTeams(int team_1, int team_2, int round)
 void generateDistanceMatrix()
 {
     // for 4x4
-    distance_matrix = { {0,745,665,929},
-                        {745,0,80,337},
-                        {665,80,0,380},
-                        {929,337,380,0}
+    // distance_matrix = { {0,745,665,929},
+    //                     {745,0,80,337},
+    //                     {665,80,0,380},
+    //                     {929,337,380,0}
+    //                   };
+    // for 6 teams
+    distance_matrix = {  { 0 ,745 ,665 ,929 , 605 , 521},
+                         {745,  0 , 80 ,337 ,1090 , 315},
+                         {665, 80 ,  0 ,380 ,1020 , 257},
+                         {929,337 ,380 ,  0 ,1380 , 408},
+                         {605,1090,1020,1380,   0 ,1010},
+                         {521, 315, 257, 408, 1010,   0},
                       };
 }
 
@@ -384,9 +410,11 @@ int cost(bool updated_schedule)
     int total_cost = 0;
     vector<vector<int> > curr_schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
 
+    // curr_schedule = {{2, -1},
+    //                  {-2, 1}};
     if(updated_schedule)
     {
-        curr_schedule = schedule;   // for loop deep copy
+        // curr_schedule = schedule;   // for loop deep copy
 
         for(int i=0; i<TOTAL_ROUNDS; i++)
             for(int j=0; j<TOTAL_TEAMS; j++)
@@ -394,7 +422,7 @@ int cost(bool updated_schedule)
     }
     else
     {
-        curr_schedule = prev_schedule;    
+        // curr_schedule = prev_schedule;    
 
         for(int i=0; i<TOTAL_ROUNDS; i++)
             for(int j=0; j<TOTAL_TEAMS; j++)
@@ -404,24 +432,38 @@ int cost(bool updated_schedule)
     for(int tm_index = 0; tm_index<TOTAL_TEAMS; tm_index++)
     {
         if(curr_schedule[0][tm_index] < 0)
-            total_cost += distance_matrix[tm_index][abs(curr_schedule[0][tm_index])];
+        {
+            total_cost += distance_matrix[tm_index][abs(curr_schedule[0][tm_index])-1];
+            // total_cost = distance_matrix[0][tm_index];
+            // cout<<"team "<<tm_index+1<<" travelling to "<<curr_schedule[0][tm_index]<<" distance is "<<distance_matrix[tm_index][abs(curr_schedule[0][tm_index])-1]<<endl;
+        }
         
         for(int rnd_index = 1; rnd_index<TOTAL_ROUNDS; rnd_index++)
         {
+            // cout<<"team "<<tm_index+1<<" travelling to "<<curr_schedule[rnd_index][tm_index]<<" distance is "<<distance_matrix[tm_index][abs(curr_schedule[rnd_index][tm_index])-1]<<endl;
+            // cout<<"Inside distance for"<<endl;
             if(curr_schedule[rnd_index][tm_index] < 0)
             {
                 if(curr_schedule[rnd_index-1][tm_index] < 0)
                 {
-                    total_cost += distance_matrix[abs(curr_schedule[rnd_index-1][tm_index])][abs(curr_schedule[rnd_index][tm_index])];
+                    total_cost += distance_matrix[abs(curr_schedule[rnd_index-1][tm_index])-1][abs(curr_schedule[rnd_index][tm_index])-1];
                 }
                 else
                 {
-                    total_cost += distance_matrix[tm_index][abs(curr_schedule[rnd_index][tm_index])];
+                    total_cost += distance_matrix[tm_index][abs(curr_schedule[rnd_index][tm_index])-1];
                 }
-                // Add a case where prev is away and current home
+            }
+            else
+            {
+                if(curr_schedule[rnd_index-1][tm_index] < 0)
+                {
+                    total_cost += distance_matrix[tm_index][abs(curr_schedule[rnd_index][tm_index])-1];
+                }
             }
         }
     }
+
+    cout<<"cost is "<<total_cost<<endl;
 
     return total_cost;
 }
@@ -436,7 +478,7 @@ int numberOfViolations(bool updated_schedule)
 
     if(updated_schedule)
     {
-        curr_schedule = schedule;   // for loop deep copy
+        // curr_schedule = schedule;   // for loop deep copy
 
         for(int i=0; i<TOTAL_ROUNDS; i++)
             for(int j=0; j<TOTAL_TEAMS; j++)
@@ -444,7 +486,7 @@ int numberOfViolations(bool updated_schedule)
     }
     else
     {
-        curr_schedule = prev_schedule;    
+        // curr_schedule = prev_schedule;    
 
         for(int i=0; i<TOTAL_ROUNDS; i++)
             for(int j=0; j<TOTAL_TEAMS; j++)
@@ -490,7 +532,7 @@ int numberOfViolations(bool updated_schedule)
         }
     }
 
-    cout<<"Atmost violations are "<<atmost_violations<<" Non repeat violations are "<<nr_violations<<endl;
+    // cout<<"Atmost violations are "<<atmost_violations<<" Non repeat violations are "<<nr_violations<<endl;
     total_violations = nr_violations + atmost_violations;
 
     return total_violations;
@@ -504,7 +546,10 @@ float f(int total_violations)
 
 float objectiveFunction(bool updated_schedule)
 {
-    return sqrt(pow(cost(updated_schedule), 2) + pow((weight*f(numberOfViolations(updated_schedule))), 2));
+    if(numberOfViolations(updated_schedule) == 0)
+        return cost(updated_schedule);
+    else
+        return sqrt(pow(cost(updated_schedule), 2) + pow((weight*f(numberOfViolations(updated_schedule))), 2));
 }
 
 void selectRandomMove()
@@ -570,10 +615,6 @@ void selectRandomMove()
 
 void ttsa()
 {
-    int best_feasible = INT32_MAX;
-    int number_of_feasible = INT32_MAX;
-    int best_infeasible = INT32_MAX;
-    int number_of_infeasible = INT32_MAX;
     int reheat = 0;
     int counter = 0;
     int max_r = 2;
@@ -602,6 +643,7 @@ void ttsa()
                 {
                     float diff_in_cost = objectiveFunction(updated_schedule) - objectiveFunction(!(updated_schedule));
                     float prob = exp(-1*diff_in_cost/temperature);
+                    // cout<<"Difference is "<<diff_in_cost<<" and probability is "<<prob<<endl;
                     if(prob > 0.5)
                         accept = true;
                     else
@@ -611,7 +653,11 @@ void ttsa()
 
                 if(accept)
                 {
-                    prev_schedule = schedule;
+                    // prev_schedule = schedule;
+                    for(int i=0; i<TOTAL_ROUNDS; i++)
+                        for(int j=0; j<TOTAL_TEAMS; j++)
+                        prev_schedule[i][j] = schedule[i][j];
+                        
                     if(numberOfViolations(updated_schedule) == 0)
                     {
                         number_of_feasible = min((int)objectiveFunction(updated_schedule), best_feasible);
@@ -657,7 +703,8 @@ int main()
     // Generate the initial schedule
     int t1, t2, week;
 
-    randomSchedule();
+    // randomSchedule();
+    getPaperSchedule();
     printSchedule();
 
     // // Swap Homes
@@ -687,16 +734,19 @@ int main()
     // partialSwapTeams(t1, t2, week);
     // printSchedule();
 
-    // Total Violations
+    // // Total Violations
     // int violations = numberOfViolations(true);
     // cout<<"Total violations are: "<<violations<<endl;
 
-    // Cost function
+    // // Cost function
     generateDistanceMatrix();
-    int distance = cost(true);
-    cout<<"Cost of the schedule is "<<distance;
+    // int distance = cost(true);
+    // cout<<"Cost of the schedule is "<<distance;
 
-    // ttsa();
+    // TTSA
+    cout<<"\nOptimized schedule "<<endl;
+    ttsa();
+    printSchedule();
 
     return 0;
 }
