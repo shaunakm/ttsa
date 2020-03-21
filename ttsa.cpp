@@ -6,11 +6,13 @@
 #include <algorithm>
 #include <random>
 #include <math.h>
+#include <chrono>
 
-#define TOTAL_TEAMS 4
+#define TOTAL_TEAMS 6
 #define TOTAL_ROUNDS 2*(TOTAL_TEAMS - 1)
 
 using namespace std;
+using namespace std::chrono;
 
 vector<vector<int> > schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
 vector<vector<int> > prev_schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
@@ -663,9 +665,9 @@ void ttsa()
 {
     int reheat = 0;
     int counter = 0;
-    int max_r = 10;
-    int max_c = 500;
-    int max_p = 700;
+    int max_r = 5;
+    int max_c = 5000;
+    int max_p = 3000;
 
     while(reheat <= max_r)
     {
@@ -746,13 +748,6 @@ void ttsa()
 
 int main()
 {
-    // Generate the initial schedule
-    int t1, t2, week;
-
-    cout<<"Initial Schedule: \n";
-    randomSchedule();
-    // getPaperSchedule();
-    printSchedule();
 
     // // Swap Homes
     // swapHomes(1, 3);
@@ -781,23 +776,35 @@ int main()
     // partialSwapTeams(t1, t2, week);
     // printSchedule();
 
+    cout<<"Initial Schedule: \n";
+    auto start_time = high_resolution_clock::now();
+    randomSchedule();
+    auto initial_time = high_resolution_clock::now();
+    printSchedule();
+
     // Total Violations
     int violations = numberOfViolations(true);
-    cout<<"Total violations are: "<<violations<<endl;
-
+    cout<<"Total violations of initial schedule are "<<violations<<endl;
     // // Cost function
-    // generateDistanceMatrix();
-    // int distance = cost(true);
-    // cout<<"Cost of the schedule is "<<distance;
-
+    generateDistanceMatrix();
+    int distance = cost(true);
+    cout<<"Cost of the initial schedule is "<<distance<<endl;
     // TTSA
     cout<<"\nOptimized schedule "<<endl;
-    generateDistanceMatrix();
     ttsa();
+    auto stop_time = high_resolution_clock::now();
     printSchedule();
     // Total Violations
     violations = numberOfViolations(true);
-    cout<<"Total violations are: "<<violations<<endl;
+    cout<<"Total violations of optimized schedule are "<<violations<<endl;
+
+    distance = cost(true);
+    cout<<"Cost of the optimized schedule is "<<distance<<endl;
+
+    auto initial_duration = duration_cast<milliseconds>(initial_time - start_time);
+    auto ttsa_duration = duration_cast<milliseconds>(stop_time - initial_time);
+
+    cout<<"Time to generate initial schedule "<<initial_duration.count()<<" and optimized schedule "<<ttsa_duration.count()<<endl;
 
     return 0;
 }
