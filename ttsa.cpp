@@ -7,7 +7,7 @@
 #include <random>
 #include <math.h>
 
-#define TOTAL_TEAMS 6
+#define TOTAL_TEAMS 4
 #define TOTAL_ROUNDS 2*(TOTAL_TEAMS - 1)
 
 using namespace std;
@@ -17,6 +17,10 @@ vector<vector<int> > prev_schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
 vector<vector<int> > initial_schedule(TOTAL_ROUNDS, vector<int> (TOTAL_TEAMS, 0));
 vector<vector<int> > distance_matrix(TOTAL_TEAMS, vector<int>(TOTAL_TEAMS, 0));
 vector<int> choices(2*TOTAL_TEAMS);
+vector<int> rounds(TOTAL_ROUNDS, -1);
+vector<int> teams(TOTAL_TEAMS, -1);
+vector<int> possible_choices;
+
 int choices_no = 1;
 
 // Parameters
@@ -61,66 +65,203 @@ void printSchedule();
 int duplicateRowIndex(int current_team, int opponent_team, int current_round);
 int numberOfViolations(bool updated_schedule);
 void generateDistanceMatrix();
+void validateSchedule();
+void initialize();
+bool opponenetExistsRound(int op_team, int round);
+bool opponenetExistsTeam(int curr_team, int op_team, int round);
+bool updatePossibleChoices(int team, int round);
+
+void validateSchedule()
+{
+    for(int i=0; i<TOTAL_TEAMS; i++)
+    {
+        int init_sum = 0;
+        for(int j=0; j<TOTAL_ROUNDS; j++)
+        {
+            init_sum += schedule[j][i];
+        }
+
+        cout<<"Team "<<i+1<<" sum is "<<init_sum<<endl;
+    }
+}
+
+void initialize()
+{
+    // cout<<"Initializing__________________________\n";
+    // Initialize rounds
+    for(int i=0; i< rounds.size(); i++)
+        rounds[i] = i+1;
+    
+    // Initialize teams
+    for(int i=0; i<teams.size(); i++)
+        teams[i] = i+1;
+    
+    // Initialize choices
+    int current_team = 1;
+    for(int i=0; i<choices.size(); i++)
+    {
+        choices[i] = current_team;
+        choices[++i] = -current_team;
+        current_team++;
+    }
+    
+    for(int i=0; i<TOTAL_ROUNDS; i++)
+        for(int j=0; j<TOTAL_TEAMS; j++)
+            schedule[i][j] = 0;
+    
+    if(possible_choices.size() > 0)
+        possible_choices.erase(possible_choices.begin(), possible_choices.end());
+}
 
 vector<vector<int> > randomSchedule()
 {
-    cout<<"Total teams are "<<TOTAL_TEAMS<<" with total rounds "<<TOTAL_ROUNDS<<endl;
 
-    // This is Q from figure 3 which contains all the possible schedules
-    for(int i=0; i<TOTAL_ROUNDS; i++)
+    initialize();
+    // Printing the initial set
+    // cout<<"Weeks set: ";
+    // for(int i=0; i< rounds.size(); i++)
+    //     cout<<rounds[i]<<",";
+    // cout<<endl;
+    
+    // cout<<"Teams set: ";
+    // for(int i=0; i<teams.size(); i++)
+    //     cout<<teams[i]<<",";
+    // cout<<endl;
+    
+    // cout<<"Choices set: ";
+    // for(int i=0; i< choices.size(); i++)
+    //     cout<<choices[i]<<",";
+    // cout<<endl;
+
+    // cout<<"Initial Set: \n";
+    // printSchedule();
+
+    // cout<<"Last element is "<<rounds.back();
+
+    while(!generateRandomSchedule())
     {
-        for(int j=0; j<TOTAL_TEAMS; j++)
-        {
-            initial_schedule[i][j] = j+1;
-        }
+        initialize();
     }
 
-    cout<<"Initial Set"<<endl;
-    for(int i=0; i<TOTAL_ROUNDS; i++)
-    {
-        cout<<"Week "<<i+1<<": ";
-        for(int j=0; j<TOTAL_TEAMS; j++)
-        {
-            cout<<initial_schedule[i][j]<<",";
-        }
-        cout<<endl;
-    }
+    // cout<<"Initial Schedule: \n";
+    // printSchedule();
 
-    // Creating choices which is a vector of all the home and away games
-    for(int i=0; i<(2*TOTAL_TEAMS); i++)
-    {
-        choices[i] = choices_no;
-        choices[++i] = -choices_no;
-        choices_no++;
-    }
-
-    cout<<"Choices"<<endl;
-    for(int i=0; i<(2*TOTAL_TEAMS); i++)
-    {
-        cout<<choices[i]<<",";
-    }
-    cout<<endl;
-
-    // Unique seed for the random number generator
-    // srand((unsigned)time(0));
-    // Generating the random schedule (Figure 3)
-    generateRandomSchedule();
-
-    // Printing the generated schedule
-    cout<<"Initial Schedule"<<endl;
-    // for(int i=0; i<TOTAL_ROUNDS; i++)
-    // {
-    //     cout<<"Week "<<i+1<<": ";
-    //     for(int j=0; j<TOTAL_TEAMS; j++)
-    //     {
-    //         cout<<schedule[i][j]<<",";
-    //     }
-    //     cout<<endl;
-    // }
+    // validateSchedule();
 
     return schedule;
+    
 }
 
+bool opponenetExistsRound(int op_team, int round)
+{
+    int rnd_index = round - 1;
+
+    for(int i=0; i<TOTAL_TEAMS; i++)
+    {
+        if(abs(schedule[rnd_index][i]) == op_team)
+            return true;
+    }
+    return false;
+}
+
+bool opponenetExistsTeam(int curr_team, int op_team, int round)
+{
+    int curr_tm_index = curr_team - 1;
+    int op_tm_index = abs(op_team) - 1;
+    int rnd_index = round - 1;
+
+    for(int i=0; i<TOTAL_ROUNDS; i++)
+    {
+        if(schedule[i][curr_tm_index] == op_team)
+            return true;
+    }
+
+    return false;
+}
+
+bool updatePossibleChoices(int team, int round)
+{
+    // cout<<"Updating the possible choices for "<<team<<" : "<<round<<"\n";
+    random_device random_dev;
+    mt19937 generate(random_dev());
+
+    shuffle(choices.begin(), choices.end(), generate);
+
+    for(int i=0; i<choices.size(); i++)
+    {
+        // Check if opponent exist and team exists
+        if((abs(choices[i]) != team)
+            && (!opponenetExistsRound(abs(choices[i]), round))
+            && (!opponenetExistsTeam(team, choices[i], round)))
+        {
+            possible_choices.push_back(choices[i]);
+        }
+    }
+
+    if(possible_choices.size() > 0)
+        return true;
+
+    return false;
+}
+
+bool generateRandomSchedule()
+{
+    srand(time(NULL));
+    int current_round = rounds[0];
+    int current_team = teams[0];
+    // vector<int> possible_choices;
+    
+    // cout<<"Inside generateRandomSchedule()\n";
+    while(current_team <= teams.back())
+    {
+        // cout<<current_round<<" : "<<current_team<<endl;
+        // cout<<"Inside teams loop\n";
+        int tm_index = current_team-1;
+        while(current_round <= rounds.back())
+        {
+            // cout<<"Inside rounds loop\n";
+            int rnd_index = current_round - 1;
+            if(schedule[rnd_index][tm_index] == 0)
+            {
+                // printSchedule();
+                if(!updatePossibleChoices(current_team, current_round))
+                {
+                    return false;
+                }
+                
+                // cout<<"choices for week "<<current_round<<" "<<" and team "<<current_team<<" : ";
+                // for(int i=0; i<possible_choices.size(); i++)
+                //     cout<<possible_choices[i]<<",";
+                // cout<<endl;
+
+                int random_index = rand() % possible_choices.size();
+
+                int current_opponent = possible_choices[random_index];
+                int op_index = abs(current_opponent)-1;
+
+                schedule[rnd_index][tm_index] = current_opponent;
+
+                if(current_opponent > 0)
+                {
+                    schedule[rnd_index][op_index] = -1*current_team;
+                }
+                else
+                {
+                    schedule[rnd_index][op_index] = current_team;
+                }
+            }
+
+            if(possible_choices.size() > 0)
+                possible_choices.erase(possible_choices.begin(), possible_choices.end());
+
+            current_round++;
+        }
+        current_round = rounds[0];
+        current_team++;
+    }
+
+    return true;
+}
 void printSchedule()
 {
     for(int i=0; i<TOTAL_ROUNDS; i++)
@@ -177,101 +318,6 @@ void getPaperSchedule()
                 };
 }
 
-bool generateRandomSchedule()
-{
-    srand(time(NULL));
-    // static int team_no = 0;
-    static int week_no = 0;
-    int opponent_index = -1;
-
-    // if(initial_schedule.empty())
-    //     return true;
-    random_device random_dev;
-    mt19937 generate(random_dev());
-
-    while(!initial_schedule.empty())
-    {
-        // cout<<initial_schedule.size()<<" : "<<initial_schedule[0].size()<<endl;
-        int current_team = initial_schedule[0][0];
-        int current_opponent = initial_schedule[0][0];
-        int random_index;
-        
-        while(current_opponent == current_team)
-        {
-            random_index = rand() % choices.size() - 1;
-
-            opponent_index = elementExists(initial_schedule[0], abs(choices[random_index]));
-            if(opponent_index != -1)
-                current_opponent = abs(choices[random_index]);
-            // cout<<"Current team "<<current_team<<" Current Opponent is "<<current_opponent<<endl;
-
-            if(opponenetExists(current_team, current_opponent) == -1)
-                current_opponent = current_team;
-        }
-        
-        current_opponent = choices[random_index];
-        // cout<<"Week no: "<<week_no<<endl;
-        // cout<<"Current team "<<current_team<<" Current Opponent is "<<current_opponent<<endl;
-
-        // schedule[week_no][team_no] = current_opponent;
-        schedule[week_no][current_team-1] = current_opponent;
-        // cout<<"wrote to schedule----------\n";
-
-        if(current_opponent > 0)
-        {
-            // schedule[week_no][opponent_index] = -1*current_team;
-            schedule[week_no][abs(current_opponent)-1] = -1*current_team;
-            // cout<<"-wrote to schedule opponent----------\n";
-        }
-        else
-        {
-            // schedule[week_no][opponent_index] = current_team;
-            schedule[week_no][abs(current_opponent)-1] = current_team;
-            // cout<<"wrote to schedule opponent----------\n";
-        }
-        
-        // cout<<"Week no: "<<week_no+1<<endl;
-        // cout<<"Current team "<<current_team<<" Current Opponent is "<<current_opponent<<endl;
-
-        if(initial_schedule[0].size() <= 2)
-        {
-            initial_schedule.erase(initial_schedule.begin()+0);
-            week_no++;
-            // team_no = 0;
-        }
-        else
-        {
-            int curr_team_in_init = elementExists(initial_schedule[0], abs(current_team));
-            int opp_team_in_init = elementExists(initial_schedule[0], abs(current_opponent));
-            // cout<<initial_schedule[0].size()<<" : ";
-            // cout<<"Starting erasing "<<abs(current_opponent)-1<<endl;
-            // initial_schedule[0].erase(initial_schedule[0].begin() + abs(current_opponent)-1);
-            initial_schedule[0].erase(initial_schedule[0].begin() + opp_team_in_init);
-            // initial_schedule[0].erase(initial_schedule[0].begin() + team_no);
-            // cout<<"Starting erasing "<<abs(current_team)-1<<endl;
-            // initial_schedule[0].erase(initial_schedule[0].begin() + current_team-1);
-            initial_schedule[0].erase(initial_schedule[0].begin() + curr_team_in_init);
-            // cout<<"completed erasing\n";
-            // team_no++;
-        }
-
-        // for(int i=0; i<TOTAL_ROUNDS; i++)
-        // {
-        //     cout<<"Week "<<i+1<<": ";
-        //     for(int j=0; j<TOTAL_TEAMS; j++)
-        //     {
-        //         cout<<schedule[i][j]<<",";
-        //     }
-        //     cout<<endl<<endl;
-        // }
-    }
-
-
-    // if(generateRandomSchedule())
-    //     return true;
-
-    return false;
-}
 
 void swapHomes(int home_team, int away_team)
 {
@@ -389,19 +435,19 @@ void partialSwapTeams(int team_1, int team_2, int round)
 
 void generateDistanceMatrix()
 {
-    // for 4x4
-    // distance_matrix = { {0,745,665,929},
-    //                     {745,0,80,337},
-    //                     {665,80,0,380},
-    //                     {929,337,380,0}
-    //                   };
-    // for 6 teams
-    distance_matrix = {  { 0 ,745 ,665 ,929 , 605 , 521},
-                         {745,  0 , 80 ,337 ,1090 , 315},
-                         {665, 80 ,  0 ,380 ,1020 , 257},
-                         {929,337 ,380 ,  0 ,1380 , 408},
-                         {605,1090,1020,1380,   0 ,1010},
-                         {521, 315, 257, 408, 1010,   0},
+    // Distance matrix for 12 teams
+    distance_matrix  = {  {0   ,745  ,665  ,929  ,605  ,521  ,370  ,587  ,467  ,670 , 700 ,1210 },
+                        {745 ,  0  , 80  ,337  ,1090 , 315 , 567 , 712 , 871 , 741, 1420, 1630},
+                        {665 , 80  ,  0  ,380  ,1020 , 257 , 501 , 664 , 808 , 697, 1340, 1570},
+                        {929 ,337  ,380  ,  0  ,1380 , 408 , 622 , 646 , 878 , 732, 1520, 1530},
+                        {605 ,1090 ,1020 ,1380 ,   0 ,1010 , 957 ,1190 ,1060 ,1270,  966, 1720},
+                        {521 , 315 , 257 , 408 , 1010,   0 , 253 , 410 , 557 , 451, 1140, 1320},
+                        {370 , 567 , 501 , 622 ,  957,  253,   0 , 250 , 311 , 325,  897, 1090},
+                        {587 , 712 , 664 , 646 , 1190,  410,  250,   0 , 260 ,  86,  939,  916},
+                        {467 , 871 , 808 , 878 , 1060,  557,  311,  260,   0 , 328,  679,  794},
+                        {670 , 741 , 697 , 732 ,1270 , 451 , 325 ,  86 ,328  ,  0 , 1005,  905},
+                        {700 ,1420 ,1340 ,1520 , 966 ,1140 , 897 , 939 , 679 ,1005,   0 , 878 },
+                        {1210, 1630, 1570, 1530, 1720, 1320, 1090,  916,  794, 905,  878,   0 },
                       };
 }
 
@@ -617,9 +663,9 @@ void ttsa()
 {
     int reheat = 0;
     int counter = 0;
-    int max_r = 2;
-    int max_c = 50;
-    int max_p = 70;
+    int max_r = 10;
+    int max_c = 500;
+    int max_p = 700;
 
     while(reheat <= max_r)
     {
@@ -703,8 +749,9 @@ int main()
     // Generate the initial schedule
     int t1, t2, week;
 
-    // randomSchedule();
-    getPaperSchedule();
+    cout<<"Initial Schedule: \n";
+    randomSchedule();
+    // getPaperSchedule();
     printSchedule();
 
     // // Swap Homes
@@ -734,9 +781,9 @@ int main()
     // partialSwapTeams(t1, t2, week);
     // printSchedule();
 
-    // // Total Violations
-    // int violations = numberOfViolations(true);
-    // cout<<"Total violations are: "<<violations<<endl;
+    // Total Violations
+    int violations = numberOfViolations(true);
+    cout<<"Total violations are: "<<violations<<endl;
 
     // // Cost function
     // generateDistanceMatrix();
@@ -748,6 +795,9 @@ int main()
     generateDistanceMatrix();
     ttsa();
     printSchedule();
+    // Total Violations
+    violations = numberOfViolations(true);
+    cout<<"Total violations are: "<<violations<<endl;
 
     return 0;
 }
