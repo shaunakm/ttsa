@@ -8,7 +8,7 @@
 #include <math.h>
 #include <chrono>
 
-#define TOTAL_TEAMS 6
+#define TOTAL_TEAMS 4
 #define TOTAL_ROUNDS 2*(TOTAL_TEAMS - 1)
 
 using namespace std;
@@ -266,15 +266,28 @@ bool generateRandomSchedule()
 }
 void printSchedule()
 {
-    for(int i=0; i<TOTAL_ROUNDS; i++)
+    cout<<"T\\R:\n";
+    for(int i=0; i<TOTAL_TEAMS; i++)
     {
-        cout<<"Week "<<i+1<<": ";
-        for(int j=0; j<TOTAL_TEAMS; j++)
+        cout<<i+1<<" \t";
+        for(int j=0; j<TOTAL_ROUNDS; j++)
         {
-            cout<<schedule[i][j]<<",";
+            if(schedule[j][i] > 0)
+                cout<<" "<<schedule[j][i]<<"\t";
+            else
+                cout<<schedule[j][i]<<"\t";
         }
         cout<<endl;
     }
+    // for(int i=0; i<TOTAL_ROUNDS; i++)
+    // {
+    //     cout<<"Week "<<i+1<<": ";
+    //     for(int j=0; j<TOTAL_TEAMS; j++)
+    //     {
+    //         cout<<schedule[i][j]<<",";
+    //     }
+    //     cout<<endl;
+    // }
 }
 
 // Returns the index of the element if it exists otherwise -1
@@ -666,8 +679,8 @@ void ttsa()
     int reheat = 0;
     int counter = 0;
     int max_r = 5;
-    int max_c = 5000;
-    int max_p = 3000;
+    int max_c = 50;
+    int max_p = 30;
 
     while(reheat <= max_r)
     {
