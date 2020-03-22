@@ -7,6 +7,8 @@
 #include <random>
 #include <math.h>
 #include <chrono>
+#include <iostream>
+#include <fstream>
 
 #define TOTAL_TEAMS 4
 #define TOTAL_ROUNDS 2*(TOTAL_TEAMS - 1)
@@ -266,19 +268,33 @@ bool generateRandomSchedule()
 }
 void printSchedule()
 {
+    ofstream sched_data_file;
+    string filename = "T" + to_string(TOTAL_TEAMS) + "_schedule_data.txt";
+    sched_data_file.open(filename, ios::app);
     cout<<"T\\R:\n";
+    sched_data_file<<"T\\R:\n";
     for(int i=0; i<TOTAL_TEAMS; i++)
     {
         cout<<i+1<<" \t";
         for(int j=0; j<TOTAL_ROUNDS; j++)
         {
             if(schedule[j][i] > 0)
+            {
                 cout<<" "<<schedule[j][i]<<"\t";
+                sched_data_file<<" "<<schedule[j][i]<<"\t";
+            }
             else
+            {
                 cout<<schedule[j][i]<<"\t";
+                sched_data_file<<schedule[j][i]<<"\t";
+            }
         }
         cout<<endl;
+        sched_data_file<<"\n";
     }
+
+    sched_data_file.close();
+
     // for(int i=0; i<TOTAL_ROUNDS; i++)
     // {
     //     cout<<"Week "<<i+1<<": ";
@@ -789,35 +805,50 @@ int main()
     // partialSwapTeams(t1, t2, week);
     // printSchedule();
 
+    ofstream sched_file;
+    string filename = "T" + to_string(TOTAL_TEAMS) + "_schedule_data.txt";
+    sched_file.open(filename, ios::app);
     cout<<"Initial Schedule: \n";
+    sched_file<<"Initial Schedule: \n";
+    sched_file.close();
     auto start_time = high_resolution_clock::now();
     randomSchedule();
     auto initial_time = high_resolution_clock::now();
     printSchedule();
 
     // Total Violations
+    sched_file.open(filename, ios::app);
     int violations = numberOfViolations(true);
     cout<<"Total violations of initial schedule are "<<violations<<endl;
+    sched_file<<"Total violations of initial schedule are "<<violations<<endl;
     // // Cost function
     generateDistanceMatrix();
     int distance = cost(true);
     cout<<"Cost of the initial schedule is "<<distance<<endl;
+    sched_file<<"Cost of the initial schedule is "<<distance<<endl;
+    sched_file.close();
     // TTSA
     cout<<"\nOptimized schedule "<<endl;
     ttsa();
     auto stop_time = high_resolution_clock::now();
     printSchedule();
     // Total Violations
+    sched_file.open(filename, ios::app);
     violations = numberOfViolations(true);
     cout<<"Total violations of optimized schedule are "<<violations<<endl;
+    sched_file<<"Total violations of optimized schedule are "<<violations<<endl;
 
     distance = cost(true);
     cout<<"Cost of the optimized schedule is "<<distance<<endl;
+    sched_file<<"Cost of the initial schedule is "<<distance<<endl;
 
     auto initial_duration = duration_cast<milliseconds>(initial_time - start_time);
     auto ttsa_duration = duration_cast<milliseconds>(stop_time - initial_time);
 
     cout<<"Time to generate initial schedule "<<initial_duration.count()<<" and optimized schedule "<<ttsa_duration.count()<<endl;
+    sched_file<<"Time to generate initial schedule "<<initial_duration.count()<<" and optimized schedule "<<ttsa_duration.count()<<endl;
+
+    sched_file.close();
 
     return 0;
 }
