@@ -10,7 +10,7 @@
 #include <iostream>
 #include <fstream>
 
-#define TOTAL_TEAMS 4
+#define TOTAL_TEAMS 12
 #define TOTAL_ROUNDS 2*(TOTAL_TEAMS - 1)
 
 using namespace std;
@@ -28,10 +28,14 @@ vector<int> possible_choices;
 int choices_no = 1;
 
 // Parameters
+int max_r = 5;
+int max_c = 2000;
+int max_p = 4000;
+
 float weight = 4000;
 float theta = 1.04;
 float delta = 1.04;
-float beta = 0.99;
+float const_beta = 0.99;
 float temperature = 400;
 float best_temperature = 400;
 int best_feasible = INT32_MAX;
@@ -276,6 +280,7 @@ void printSchedule()
     for(int i=0; i<TOTAL_TEAMS; i++)
     {
         cout<<i+1<<" \t";
+        sched_data_file<<i+1<<" \t";
         for(int j=0; j<TOTAL_ROUNDS; j++)
         {
             if(schedule[j][i] > 0)
@@ -694,9 +699,6 @@ void ttsa()
 {
     int reheat = 0;
     int counter = 0;
-    int max_r = 5;
-    int max_c = 50;
-    int max_p = 30;
 
     while(reheat <= max_r)
     {
@@ -719,8 +721,8 @@ void ttsa()
                 else
                 {
                     float diff_in_cost = objectiveFunction(updated_schedule) - objectiveFunction(!(updated_schedule));
-                    float prob = 100*exp(-1*diff_in_cost/temperature);
-                    // cout<<"Difference is "<<diff_in_cost<<" and probability is "<<prob<<endl;
+                    float prob = 1000*exp(-1*diff_in_cost/temperature);
+                    cout<<"Difference is "<<diff_in_cost<<" and probability is "<<prob<<" temperature is "<<temperature<<endl;
                     if(prob > 10)
                         accept = true;
                     else
@@ -761,17 +763,17 @@ void ttsa()
                             weight /= delta;
                         }
                     }
-                }
-                else
-                {
-                    counter++;
+                    else
+                    {
+                        counter++;
+                    }
                 }
             }
             phase++;
-            temperature *= beta;
+            temperature = temperature * const_beta;
         }
         reheat++;
-        temperature *= 2;
+        temperature = 2*best_temperature;
     }
 }
 
@@ -805,11 +807,12 @@ int main()
     // partialSwapTeams(t1, t2, week);
     // printSchedule();
 
+
     ofstream sched_file;
     string filename = "T" + to_string(TOTAL_TEAMS) + "_schedule_data.txt";
     sched_file.open(filename, ios::app);
     cout<<"Initial Schedule: \n";
-    sched_file<<"Initial Schedule: \n";
+    sched_file<<"\n----------\nInitial Schedule: \n";
     sched_file.close();
     auto start_time = high_resolution_clock::now();
     randomSchedule();
@@ -828,13 +831,17 @@ int main()
     sched_file<<"Cost of the initial schedule is "<<distance<<endl;
     sched_file.close();
     // TTSA
+    sched_file.open(filename, ios::app);
     cout<<"\nOptimized schedule "<<endl;
+    sched_file<<"\nParameters are maxR: "<<max_r<<" maxC: "<<max_c<<" maxP: "<<max_p<<" T0: "<<temperature<<endl;
+    sched_file<<"Optimized Schedule: \n";
+    sched_file.close();
     ttsa();
     auto stop_time = high_resolution_clock::now();
     printSchedule();
     // Total Violations
-    sched_file.open(filename, ios::app);
     violations = numberOfViolations(true);
+    sched_file.open(filename, ios::app);
     cout<<"Total violations of optimized schedule are "<<violations<<endl;
     sched_file<<"Total violations of optimized schedule are "<<violations<<endl;
 
@@ -846,7 +853,8 @@ int main()
     auto ttsa_duration = duration_cast<milliseconds>(stop_time - initial_time);
 
     cout<<"Time to generate initial schedule "<<initial_duration.count()<<" and optimized schedule "<<ttsa_duration.count()<<endl;
-    sched_file<<"Time to generate initial schedule "<<initial_duration.count()<<" and optimized schedule "<<ttsa_duration.count()<<endl;
+    sched_file<<"Time to generate initial schedule "<<initial_duration.count()<<" ms"<<" and optimized schedule "<<ttsa_duration.count()<<" ms"<<endl;
+    sched_file<<"----------\n";
 
     sched_file.close();
 
