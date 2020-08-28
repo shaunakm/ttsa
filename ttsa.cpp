@@ -10,7 +10,7 @@
 #include <iostream>
 #include <fstream>
 
-#define TOTAL_TEAMS 12
+#define TOTAL_TEAMS 8
 #define TOTAL_ROUNDS 2*(TOTAL_TEAMS - 1)
 
 using namespace std;
