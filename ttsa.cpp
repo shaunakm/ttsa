@@ -10,7 +10,7 @@
 #include <iostream>
 #include <fstream>
 
-#define TOTAL_TEAMS 12
+#define TOTAL_TEAMS 8
 #define TOTAL_ROUNDS 2*(TOTAL_TEAMS - 1)
 
 using namespace std;
@@ -29,13 +29,13 @@ int choices_no = 1;
 
 // Parameters
 int max_r = 5;
-int max_c = 2000;
+int max_c = 3000;
 int max_p = 4000;
 
 float weight = 4000;
-float theta = 1.04;
-float delta = 1.04;
-float const_beta = 0.99;
+float theta = 1.05;
+float delta = 1.05;
+float const_beta = 0.9999;
 float temperature = 400;
 float best_temperature = 400;
 int best_feasible = INT32_MAX;
@@ -125,36 +125,11 @@ vector<vector<int> > randomSchedule()
 {
 
     initialize();
-    // Printing the initial set
-    // cout<<"Weeks set: ";
-    // for(int i=0; i< rounds.size(); i++)
-    //     cout<<rounds[i]<<",";
-    // cout<<endl;
-    
-    // cout<<"Teams set: ";
-    // for(int i=0; i<teams.size(); i++)
-    //     cout<<teams[i]<<",";
-    // cout<<endl;
-    
-    // cout<<"Choices set: ";
-    // for(int i=0; i< choices.size(); i++)
-    //     cout<<choices[i]<<",";
-    // cout<<endl;
-
-    // cout<<"Initial Set: \n";
-    // printSchedule();
-
-    // cout<<"Last element is "<<rounds.back();
 
     while(!generateRandomSchedule())
     {
         initialize();
     }
-
-    // cout<<"Initial Schedule: \n";
-    // printSchedule();
-
-    // validateSchedule();
 
     return schedule;
     
@@ -217,30 +192,19 @@ bool generateRandomSchedule()
     srand(time(NULL));
     int current_round = rounds[0];
     int current_team = teams[0];
-    // vector<int> possible_choices;
-    
-    // cout<<"Inside generateRandomSchedule()\n";
+
     while(current_team <= teams.back())
     {
-        // cout<<current_round<<" : "<<current_team<<endl;
-        // cout<<"Inside teams loop\n";
         int tm_index = current_team-1;
         while(current_round <= rounds.back())
         {
-            // cout<<"Inside rounds loop\n";
             int rnd_index = current_round - 1;
             if(schedule[rnd_index][tm_index] == 0)
             {
-                // printSchedule();
                 if(!updatePossibleChoices(current_team, current_round))
                 {
                     return false;
                 }
-                
-                // cout<<"choices for week "<<current_round<<" "<<" and team "<<current_team<<" : ";
-                // for(int i=0; i<possible_choices.size(); i++)
-                //     cout<<possible_choices[i]<<",";
-                // cout<<endl;
 
                 int random_index = rand() % possible_choices.size();
 
@@ -270,6 +234,7 @@ bool generateRandomSchedule()
 
     return true;
 }
+
 void printSchedule()
 {
     ofstream sched_data_file;
@@ -723,7 +688,7 @@ void ttsa()
                     float diff_in_cost = objectiveFunction(updated_schedule) - objectiveFunction(!(updated_schedule));
                     float prob = 1000*exp(-1*diff_in_cost/temperature);
                     cout<<"Difference is "<<diff_in_cost<<" and probability is "<<prob<<" temperature is "<<temperature<<endl;
-                    if(prob > 10)
+                    if(prob > 100)
                         accept = true;
                     else
                         accept = false;
@@ -779,35 +744,6 @@ void ttsa()
 
 int main()
 {
-
-    // // Swap Homes
-    // swapHomes(1, 3);
-    // cout<<"\nAfter Home swapping:\n";
-    // printSchedule();
-
-    // // Swap Rounds
-    // swapRounds(2, 3);
-    // cout<<"\nAfter Round swapping:\n";
-    // printSchedule();
-
-    // Swap Team Schedule
-    // swapTeamSchedule(1, 4);
-    // cout<<"\nAfter Team Schedule Swapping:\n";
-    // printSchedule();
-
-    // Partial Swap
-    // partialSwapRounds(2, 1, 4);
-    // cout<<"\nAfter Partial Swap Rounds:\n";
-    // printSchedule();
-
-    // Partial Swap Teams 
-    // cout<<"\nEnter team 1, team 2 and round: ";
-    // cin>>t1>>t2>>week;
-    // cout<<"Partial Swap Team Schedule:\n";
-    // partialSwapTeams(t1, t2, week);
-    // printSchedule();
-
-
     ofstream sched_file;
     string filename = "T" + to_string(TOTAL_TEAMS) + "_schedule_data.txt";
     sched_file.open(filename, ios::app);
